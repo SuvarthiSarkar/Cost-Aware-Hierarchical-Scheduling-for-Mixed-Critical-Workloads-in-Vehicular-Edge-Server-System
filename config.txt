@@ -1,0 +1,52 @@
+# ═══════════════════════════════════════════════════════════
+# FFE-VESS Default Configuration
+# Used by: gen_data (data generation), run_experiments.py,
+#          sweep_param.py, make_all_graphs.py, etc.
+# ═══════════════════════════════════════════════════════════
+
+# ── Simulation Setup ──
+NUM_AV          = 80        # number of autonomous vehicles
+NUM_BS          = 10        # number of base stations
+SIM_MS          = 10000     # simulation duration (milliseconds)
+GRID_SIZE       = 200       # city grid dimension (200×200)
+BATCH           = 15        # scheduling batch interval (ms)
+
+# ── Scheduling Parameters ──
+DIS_HOP         = 100        # D_max: distance rank limit [1, NUM_BS]
+# ── BS Capacity ──
+MAX_UTIL        = 0.8      # operating fraction of U_max
+                            # effective capacity per BS = MAX_UTIL × U_max
+                            # U_max (physical) comes from server.cfg [UMAX_LO, UMAX_HI]
+                            # MAX_UTIL=1.0 → use full physical capacity
+                            # MAX_UTIL=0.85 → use 85% of physical capacity
+
+# ── Cost Function Weights (must sum to 1.0) ──
+PSI_DROP        = 0.55      # ψ_drop: task drop penalty weight
+PSI_DIS         = 0.15      # ψ_dis:  communication distance weight
+PSI_E           = 0.30      # ψ_e:    energy consumption weight
+
+# ── Drop Penalty ──
+R_HARD          = 0.9       # importance weight for HC task
+R_SOFT          = 0.1       # importance weight for LC task
+DELTA           = 0.3       # δ: penalty amplifier for missing tasks
+                            # C_drop = (1+δ) × base_drop_fraction
+                            # missing a task costs (1+δ) × its profit
+                            # δ=0.0 → penalty = profit (default)
+                            # δ=1.0 → penalty = 2× profit
+                            # δ=2.0 → penalty = 3× profit
+
+# ── Power Model Defaults ──
+# (Per-BS values are sampled from server.cfg; these are fallback/CLI defaults)
+P_IDLE          = 150       # static/idle power (Watts)
+P_MAX           = 400       # maximum power (Watts)
+
+# ── Task Generation Parameters ──
+HARD_SOFT_RATIO = 10        # HC:LC task ratio (29:1 ≈ 96.6% HC)
+HARD_DEADLINE   = 150       # HC deadline (ms from arrival)
+SOFT_DEADLINE   = 3000      # LC deadline (ms from arrival)
+HARD_INTERVAL   = 15        # HC task generation interval (ms)
+
+# ── Hotspot Configuration ──
+HOTSPOT_PROB    = 0.30      # probability of HC task in hotspot zone
+HOTSPOT_RADIUS  = 30        # hotspot zone radius (grid units)
+HOTSPOT_CLUSTER = 0.30      # fraction of BSs that are hotspot centers

@@ -1,0 +1,100 @@
+# ═══════════════════════════════════════════════════════════
+# FFE-VESS: How to Build & Run
+# ═══════════════════════════════════════════════════════════
+
+## 1. BUILD
+    make
+
+## 2. GENERATE ALL GRAPHS
+    python3 run_experiments.py              # everything
+    python3 run_experiments.py default      # 7 default figures
+    python3 run_experiments.py psi          # 4 ψ heatmap/robustness
+    python3 run_experiments.py sweep        # all 10 parameter sweeps
+    python3 run_experiments.py sweep delta load umax  # specific sweeps
+    python3 run_experiments.py list         # show all options
+
+## 3. CONFIG FILES
+
+    config.txt — ALL defaults:
+
+      # Simulation
+      NUM_AV    = 80       NUM_BS    = 10       SIM_MS = 10000
+
+      # BS Capacity
+      MAX_UTIL  = 0.85     # U_max: max utilization per BS
+                           # THIS is how many tasks a BS can handle
+                           # effective max concurrent tasks ≈ U_max / avg_task_util
+                           # per-BS values sampled from server.cfg [UMAX_LO, UMAX_HI]
+
+      # Distance
+      DIS_HOP   = 10       # D_max: rank limit for BS selection
+
+      # Drop penalty
+      R_HARD    = 0.9      # importance of HC tasks
+      R_SOFT    = 0.1      # importance of LC tasks
+      DELTA     = 0.0      # penalty amplifier
+                           # C_drop = (1+δ) × base_drops
+                           # δ=0 → penalty equals profit
+                           # δ=1 → penalty is 2× profit
+                           # δ=2 → penalty is 3× profit
+
+      # Cost weights (sum to 1)
+      PSI_DROP  = 0.55     PSI_DIS = 0.15     PSI_E = 0.30
+
+      # Power
+      P_IDLE    = 150      P_MAX   = 400
+
+    server.cfg — Per-BS heterogeneity (uniform sampling):
+
+      P_IDLE_LO/HI = 15 / 200       static power range (W)
+      P_MAX_LO/HI  = 60 / 500       max power range (W)
+      UMAX_LO/HI   = 0.80 / 0.90    BS capacity range
+      SERVER_SEED   = 12345
+
+## 4. CLI OVERRIDES
+    --delta <val>     drop penalty amplifier
+    --umax  <val>     all BSs capacity (U_max)
+    --pidle <W>       all BSs static power
+    --pmax  <W>       all BSs max power
+    --config <file>   alternate config.txt
+    --server-cfg <F>  alternate server.cfg
+
+    Priority: hardcoded → config.txt → CLI flags
+
+    Examples:
+      bin/proposed data/80av_10bs.txt 10 --detailed
+      bin/proposed data/80av_10bs.txt 5 --delta 1.0 --umax 0.90 --detailed
+
+## 5. SWEEPS (10 parameters, 5 plots each)
+
+    d_hop    [1,2,3,5,7,10]             distance rank limit
+    umax     [0.70 ... 1.00]            BS capacity (max tasks)
+    delta    [0.0, 0.5, 1.0, 1.5, 2, 3] drop penalty amplifier
+    load     [light,mid_light,mid,       load scenarios
+              heavy,hotspot]
+    pidle    [15 ... 300]               static power
+    pmax     [200 ... 1000]             max power
+    num_av   [30,50,80,100,120]         vehicles
+    num_bs   [5,10,15,25,35]            base stations
+    psi_drop [0.10 ... 0.80]            drop weight
+    psi_e    [0.10 ... 0.80]            energy weight
+
+## 6. DELTA EXPLAINED
+    Profit of completing task = R × 1 (R_HARD for HC, R_SOFT for LC)
+    Penalty of missing task   = R × (1+δ)
+
+    C_drop = (1+δ) × (drop_hard×R_HARD + drop_soft×R_SOFT)
+                    / (total_hard×R_HARD + total_soft×R_SOFT)
+
+    δ=0 → penalty = profit     → C_drop ∈ [0, 1]
+    δ=1 → penalty = 2× profit  → C_drop ∈ [0, 2]
+    δ=2 → penalty = 3× profit  → C_drop ∈ [0, 3]
+
+## 7. BS CAPACITY EXPLAINED
+    Each task uses utilization u = process_time / (deadline − arrival).
+    A BS accepts tasks until total utilization ≤ U_max.
+    With avg task util ≈ 0.05–0.10 and U_max=0.85:
+      max concurrent tasks per BS ≈ 8–17
+
+    To increase capacity: raise UMAX_LO/HI in server.cfg or --umax
+    To decrease capacity: lower them
